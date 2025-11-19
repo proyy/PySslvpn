@@ -7,7 +7,7 @@ reconnection, multiple configuration management, and network configuration
 handling.
 """
 
-__version__ = "1.0.3"
+__version__ = "1.0.4"
 __author__ = "PySslvpn Developer"
 __email__ = "admin@proyy.com"
 __license__ = "GPL-3.0-or-later"

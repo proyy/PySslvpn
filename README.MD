@@ -1,6 +1,6 @@
 ## 项目概述
 
-PySslvpn是一个功能完整的SSL VPN客户端，支持连接通用SSL VPN服务器，具备多配置管理、自动重连、网络配置自动清理等高级功能。
+PySslvpn是一个功能完整的开源Python SSL VPN客户端，支持连接通用SSL VPN服务器，具备多配置管理、自动重连、网络配置自动清理等高级功能。
 基于纯Python完整实现的SSL VPN客户端。这个方案使用Python进行TLS通信，并包含完整的VPN客户端功能，作者是[zouhong](https://github.com/proyy/PySslvpn)。
 
 使用说明

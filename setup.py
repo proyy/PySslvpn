@@ -44,6 +44,13 @@ setup(
     python_requires=">=3.7",
     install_requires=[
         'tlslite-ng>=0.8.0',
+        'ecdsa>=0.18.0b1',
+        'six>=1.9.0',
+        'pytap>=0.1.0; platform_system=="Windows"',
+        'pytuntap>=1.0.0; platform_system=="Windows"',
+        'pydivert>=2.1.0; platform_system=="Windows"',
+        'tuntap>=2.0.0; platform_system!="Windows"',
+        'pytuntap>=1.0.0; platform_system!="Windows"',
     ],
     entry_points={
         "console_scripts": [

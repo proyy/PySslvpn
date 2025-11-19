@@ -14,7 +14,7 @@ with open("requirements.txt", "r", encoding="utf-8") as f:
 
 setup(
     name="pysslvpn",
-    version="1.0.1",
+    version="1.0.2",
     author="PySslvpn Developer",
     author_email="admin@proyy.com",
     description="A pure Python SSL VPN client implementation",
@@ -27,8 +27,10 @@ setup(
         "Intended Audience :: Developers",
         "Intended Audience :: System Administrators",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+        "Operating System :: Microsoft :: Windows",
         "Operating System :: POSIX :: Linux",
         "Operating System :: Unix",
+        "Operating System :: MacOS",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",

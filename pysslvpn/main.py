@@ -23,15 +23,44 @@ import socket
 import os
 import sys
 import logging
+import platform
 from typing import Optional, Dict, List
 from pathlib import Path
 
+# 平台检测
+IS_WINDOWS = platform.system() == 'Windows'
+IS_LINUX = platform.system() == 'Linux'
+IS_MACOS = platform.system() == 'Darwin'
+
 # 第三方库导入
 from tlslite import TLSConnection, HandshakeSettings, Session
+
+# 根据平台导入TUN/TAP库
+tuntap = None
 try:
-    import tuntap
-except ImportError:
-    from pytuntap import TunTap as tuntap
+    if IS_WINDOWS:
+        # Windows平台
+        try:
+            import pytap as tuntap
+        except ImportError:
+            try:
+                import pytuntap as tuntap
+            except ImportError:
+                try:
+                    import pydivert as tuntap
+                except ImportError:
+                    pass
+    else:
+        # Linux/macOS平台
+        try:
+            import tuntap
+        except ImportError:
+            try:
+                import pytuntap as tuntap
+            except ImportError:
+                pass
+except Exception as e:
+    pass
 
 class SSLVPNAuthentication:
     """处理VPN认证逻辑"""
@@ -109,44 +138,84 @@ class NetworkConfigManager:
     """管理系统网络配置（路由、DNS）"""
     
     def __init__(self):
-        self.original_resolv_conf = None
+        self.original_dns_config = None
         self.added_routes = []
+        self.is_windows = IS_WINDOWS
         
     def backup_dns_config(self):
         """备份当前DNS配置"""
-        try:
-            with open('/etc/resolv.conf', 'r') as f:
-                self.original_resolv_conf = f.read()
-        except Exception as e:
-            logging.warning(f"无法备份DNS配置: {e}")
+        if self.is_windows:
+            # Windows平台：使用netsh命令获取DNS配置
+            try:
+                import subprocess
+                result = subprocess.run(['netsh', 'interface', 'ip', 'show', 'dns'], 
+                                      capture_output=True, text=True)
+                self.original_dns_config = result.stdout
+            except Exception as e:
+                logging.warning(f"无法备份Windows DNS配置: {e}")
+        else:
+            # Linux/MacOS平台
+            try:
+                with open('/etc/resolv.conf', 'r') as f:
+                    self.original_dns_config = f.read()
+            except Exception as e:
+                logging.warning(f"无法备份DNS配置: {e}")
+    
+    def backup_dns_configuration(self):
+        """备份当前DNS配置（兼容性方法）"""
+        self.backup_dns_config()
     
     def restore_dns_config(self):
         """恢复原始DNS配置"""
-        if self.original_resolv_conf:
+        if not self.original_dns_config:
+            return
+            
+        if self.is_windows:
+            # Windows平台：恢复DNS配置比较复杂，通常需要手动操作
+            logging.warning("Windows平台DNS配置需要手动恢复")
+        else:
+            # Linux/MacOS平台
             try:
                 with open('/etc/resolv.conf', 'w') as f:
-                    f.write(self.original_resolv_conf)
+                    f.write(self.original_dns_config)
                 logging.info("DNS配置已恢复")
             except Exception as e:
                 logging.error(f"恢复DNS配置失败: {e}")
     
     def apply_dns_servers(self, dns_servers: List[str]):
         """应用DNS服务器配置"""
-        try:
-            with open('/etc/resolv.conf', 'w') as f:
-                if self.original_resolv_conf:
-                    f.write(f"# 由SSL VPN客户端临时配置\n")
+        if self.is_windows:
+            # Windows平台：使用netsh设置DNS
+            try:
+                import subprocess
                 for dns in dns_servers:
-                    f.write(f"nameserver {dns}\n")
-            logging.info(f"DNS服务器已设置: {dns_servers}")
-        except Exception as e:
-            logging.error(f"设置DNS服务器失败: {e}")
+                    subprocess.run(['netsh', 'interface', 'ip', 'set', 'dns', 
+                                  '本地连接', 'static', dns], check=False)
+                logging.info(f"Windows DNS服务器已设置: {dns_servers}")
+            except Exception as e:
+                logging.error(f"设置Windows DNS服务器失败: {e}")
+        else:
+            # Linux/MacOS平台
+            try:
+                with open('/etc/resolv.conf', 'w') as f:
+                    if self.original_dns_config:
+                        f.write(f"# 由SSL VPN客户端临时配置\n")
+                    for dns in dns_servers:
+                        f.write(f"nameserver {dns}\n")
+                logging.info(f"DNS服务器已设置: {dns_servers}")
+            except Exception as e:
+                logging.error(f"设置DNS服务器失败: {e}")
     
     def add_routes(self, routes: List[str], interface: str):
         """添加路由规则"""
         for route in routes:
             try:
-                os.system(f"ip route add {route} dev {interface}")
+                if self.is_windows:
+                    # Windows平台：使用route命令
+                    os.system(f"route add {route} {interface}")
+                else:
+                    # Linux/MacOS平台
+                    os.system(f"ip route add {route} dev {interface}")
                 self.added_routes.append((route, interface))
                 logging.info(f"路由已添加: {route} -> {interface}")
             except Exception as e:
@@ -156,7 +225,10 @@ class NetworkConfigManager:
         """清理添加的所有路由"""
         for route, interface in self.added_routes:
             try:
-                os.system(f"ip route del {route} dev {interface}")
+                if self.is_windows:
+                    os.system(f"route delete {route}")
+                else:
+                    os.system(f"ip route del {route} dev {interface}")
                 logging.info(f"路由已删除: {route}")
             except Exception as e:
                 logging.error(f"删除路由失败 {route}: {e}")
@@ -268,13 +340,34 @@ class SSLVPNClient:
     
     def setup_tun_interface(self) -> bool:
         """设置TUN虚拟接口"""
-        try:
-            self.tun_interface = tuntap.TunInterface(name='tun0')
-            self.tun_interface.up()
+        if tuntap is None:
+            logging.error("TUN接口库未安装，无法设置虚拟接口")
+            return False
             
-            # 配置接口IP
-            if self.session.interface_ip:
-                os.system(f"ip addr add {self.session.interface_ip} dev tun0")
+        try:
+            if IS_WINDOWS:
+                # Windows平台：使用pytap或pytuntap
+                if hasattr(tuntap, 'TunInterface'):
+                    self.tun_interface = tuntap.TunInterface(name='tun0')
+                else:
+                    # pytuntap的接口可能不同
+                    self.tun_interface = tuntap.TunTapDevice(name='tun0')
+                self.tun_interface.up()
+                
+                # Windows平台配置接口IP
+                if self.session.interface_ip:
+                    import subprocess
+                    subprocess.run(['netsh', 'interface', 'ip', 'set', 'address', 
+                                  'tun0', 'static', self.session.interface_ip], 
+                                 check=False)
+            else:
+                # Linux/MacOS平台
+                self.tun_interface = tuntap.TunInterface(name='tun0')
+                self.tun_interface.up()
+                
+                # 配置接口IP
+                if self.session.interface_ip:
+                    os.system(f"ip addr add {self.session.interface_ip} dev tun0")
             
             logging.info("TUN接口设置完成")
             return True
@@ -286,7 +379,7 @@ class SSLVPNClient:
     def apply_network_configuration(self):
         """应用网络配置（路由、DNS）"""
         # 备份当前DNS配置
-        self.config_manager.backup_dns_config()
+        self.config_manager.backup_dns_configuration()
         
         # 应用DNS服务器
         if self.session.dns_servers:

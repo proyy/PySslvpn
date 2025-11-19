@@ -15,7 +15,9 @@ import asyncio
 import getpass
 import sys
 import os
+import platform
 from .config_manager import VPNConfigManager
+from .main import SSLVPNClient, IS_WINDOWS
 
 async def start_vpn_connection(args, config_manager: VPNConfigManager):
     """启动VPN连接"""
@@ -161,8 +163,8 @@ def main():
     
     args = parser.parse_args()
     
-    # 检查root权限（仅连接时需要）
-    if args.command == 'connect' and os.geteuid() != 0:
+    # 检查root权限（仅连接时需要，Windows平台不需要）
+    if args.command == 'connect' and not sys.platform.startswith('win32') and os.geteuid() != 0:
         print("错误: 需要root权限运行此程序")
         sys.exit(1)
     

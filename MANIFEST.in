@@ -1,0 +1,25 @@
+include LICENSE
+include README.MD
+include requirements.txt
+include setup.py
+include pyproject.toml
+
+# 包含所有Python源文件
+recursive-include *.py
+
+# 排除不需要的文件
+exclude .gitignore
+exclude .git/
+exclude __pycache__/
+exclude *.pyc
+exclude *.pyo
+exclude *.pyd
+exclude .DS_Store
+exclude Thumbs.db
+
+# 排除开发相关文件
+exclude tests/
+exclude docs/
+exclude .github/
+exclude .vscode/
+exclude .idea/

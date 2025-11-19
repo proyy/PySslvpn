@@ -3,16 +3,66 @@
 PySslvpn是一个功能完整的开源Python SSL VPN客户端，支持连接通用SSL VPN服务器，具备多配置管理、自动重连、网络配置自动清理等高级功能。
 基于纯Python完整实现的SSL VPN客户端。这个方案使用Python进行TLS通信，并包含完整的VPN客户端功能，作者是[zouhong](https://github.com/proyy/PySslvpn)。
 
-使用说明
-安装和运行
-安装依赖：
+## 安装
 
-bash
+### 从PyPI安装（推荐）
+
+```bash
+pip install pysslvpn
+```
+
+### 从源码安装
+
+```bash
+# 克隆仓库
+git clone https://github.com/proyy/PySslvpn.git
+cd PySslvpn
+
+# 安装依赖
+pip install -r requirements.txt
+
+# 安装包
+pip install .
+```
+
+## 使用
+
+### 命令行使用
+
+安装后可以直接使用 `pysslvpn` 命令：
+
+```bash
+# 连接VPN服务器
+sudo pysslvpn connect --server vpn.example.com --port 443 --username user --password pass
+
+# 使用已保存的配置连接
+sudo pysslvpn connect --config myvpn
+
+# 启用自动重连
+sudo pysslvpn connect --server vpn.example.com --username user --password pass --auto-reconnect --max-retries 5
+
+# 列出所有保存的配置
+pysslvpn list
+
+# 保存配置
+pysslvpn save myvpn --server vpn.example.com --username user
+
+# 删除配置
+pysslvpn delete myvpn
+
+# 设置默认配置
+pysslvpn set-default myvpn
+```
+
+### 从源码运行
+
+```bash
+# 安装依赖
 pip install tlslite-ng python-tun-tap
-运行客户端：
 
-bash
+# 运行客户端
 sudo python cli.py connect vpn.example.com -u your_username
+```
 
 带参数运行：
 

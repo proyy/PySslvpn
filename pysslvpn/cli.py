@@ -15,7 +15,7 @@ import asyncio
 import getpass
 import sys
 import os
-from config_manager import VPNConfigManager
+from .config_manager import VPNConfigManager
 
 async def start_vpn_connection(args, config_manager: VPNConfigManager):
     """启动VPN连接"""

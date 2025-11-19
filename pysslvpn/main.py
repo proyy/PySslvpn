@@ -28,8 +28,10 @@ from pathlib import Path
 
 # 第三方库导入
 from tlslite import TLSConnection, HandshakeSettings, Session
-from tlslite.api import TLSClientConnection
-import tuntap
+try:
+    import tuntap
+except ImportError:
+    from pytuntap import TunTap as tuntap
 
 class SSLVPNAuthentication:
     """处理VPN认证逻辑"""
@@ -202,7 +204,7 @@ class SSLVPNClient:
                 )
                 
                 # 创建TLS连接
-                self.tls_conn = TLSClientConnection(reader, writer)
+                self.tls_conn = TLSConnection(reader, writer)
                 
                 # 进行TLS握手
                 await self.tls_conn.handshake(

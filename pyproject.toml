@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pysslvpn"
-version = "1.0.2"
+version = "1.0.3"
 description = "A pure Python SSL VPN client implementation"
 readme = "README.MD"
 requires-python = ">=3.7"

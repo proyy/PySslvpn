@@ -37,19 +37,22 @@ from tlslite import TLSConnection, HandshakeSettings, Session
 
 # 根据平台导入TUN/TAP库
 tuntap = None
+pydivert = None
 try:
     if IS_WINDOWS:
-        # Windows平台
+        # Windows平台：优先使用pytuntap（支持TUN/TAP），其次pytap2
         try:
-            import pytap as tuntap
+            import pytuntap as tuntap
         except ImportError:
             try:
-                import pytuntap as tuntap
+                import pytap2 as tuntap
             except ImportError:
-                try:
-                    import pydivert as tuntap
-                except ImportError:
-                    pass
+                pass
+        # pydivert用于Windows网络包捕获（与TUN/TAP配合使用）
+        try:
+            import pydivert
+        except ImportError:
+            pass
     else:
         # Linux/macOS平台
         try:
@@ -243,7 +246,7 @@ class SSLVPNClient:
         
         self.server_ip = server_ip
         self.server_port = server_port
-        self.auth = SSLVPNAuthentication(username, password, ignore_cert_errors)
+        self.auth = SSLVPNAuthentication(username=username, password=password, ignore_cert_errors=ignore_cert_errors)
         self.session = SSLVPNSession()
         self.protocol = SSLVPNTunnelProtocol()
         self.config_manager = NetworkConfigManager()
@@ -346,28 +349,32 @@ class SSLVPNClient:
             
         try:
             if IS_WINDOWS:
-                # Windows平台：使用pytap或pytuntap
-                if hasattr(tuntap, 'TunInterface'):
-                    self.tun_interface = tuntap.TunInterface(name='tun0')
+                # Windows平台：使用pytuntap或pytap2
+                if hasattr(tuntap, 'TunTapDevice'):
+                    # pytuntap的接口 - 创建TUN设备
+                    self.tun_interface = tuntap.TunTapDevice(nic_type="Tun", nic_name="tun0")
+                    # 配置接口IP
+                    if self.session.interface_ip:
+                        self.tun_interface.config(ip=self.session.interface_ip, mask="255.255.255.0")
+                elif hasattr(tuntap, 'TapDevice'):
+                    # pytap2的接口 - 创建TAP设备
+                    self.tun_interface = tuntap.TapDevice(name='tun0')
+                    self.tun_interface.up()
+                    # pytap2需要手动配置接口IP
+                    if self.session.interface_ip:
+                        import subprocess
+                        subprocess.run(['netsh', 'interface', 'ip', 'set', 'address', 
+                                      'tun0', 'static', self.session.interface_ip, "255.255.255.0"], 
+                                     check=False)
                 else:
-                    # pytuntap的接口可能不同
-                    self.tun_interface = tuntap.TunTapDevice(name='tun0')
-                self.tun_interface.up()
-                
-                # Windows平台配置接口IP
-                if self.session.interface_ip:
-                    import subprocess
-                    subprocess.run(['netsh', 'interface', 'ip', 'set', 'address', 
-                                  'tun0', 'static', self.session.interface_ip], 
-                                 check=False)
+                    logging.error("不支持的TUN/TAP库接口")
+                    return False
             else:
                 # Linux/MacOS平台
-                self.tun_interface = tuntap.TunInterface(name='tun0')
-                self.tun_interface.up()
-                
+                self.tun_interface = tuntap.TunTapDevice(nic_type="Tun", nic_name="tun0")
                 # 配置接口IP
                 if self.session.interface_ip:
-                    os.system(f"ip addr add {self.session.interface_ip} dev tun0")
+                    self.tun_interface.config(ip=self.session.interface_ip, mask="255.255.255.0")
             
             logging.info("TUN接口设置完成")
             return True

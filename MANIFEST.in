@@ -4,10 +4,10 @@ include requirements.txt
 include setup.py
 include pyproject.toml
 
-# 包含所有Python源文件
+# Include all Python source files
 recursive-include *.py
 
-# 排除不需要的文件
+# Exclude unnecessary files
 exclude .gitignore
 exclude .git/
 exclude __pycache__/
@@ -17,7 +17,7 @@ exclude *.pyd
 exclude .DS_Store
 exclude Thumbs.db
 
-# 排除开发相关文件
+# Exclude development related files
 exclude tests/
 exclude docs/
 exclude .github/

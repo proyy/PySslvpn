@@ -44,9 +44,9 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/pysslvpn"
-"Bug Reports" = "https://github.com/yourusername/pysslvpn/issues"
-Source = "https://github.com/yourusername/pysslvpn"
+Homepage = "https://github.com/proyy/PySslvpn"
+"Bug Reports" = "https://github.com/proyy/PySslvpn/issues"
+Source = "https://github.com/proyy/PySslvpn"
 
 [project.scripts]
 pysslvpn = "pysslvpn.cli:main"

@@ -16,11 +16,11 @@ setup(
     name="pysslvpn",
     version="1.0.0",
     author="PySslvpn Developer",
-    author_email="your.email@example.com",
+    author_email="admin@proyy.com",
     description="A pure Python SSL VPN client implementation",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/pysslvpn",
+    url="https://github.com/proyy/PySslvpn",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 4 - Beta",
@@ -52,7 +52,7 @@ setup(
     zip_safe=False,
     keywords="vpn ssl client networking security",
     project_urls={
-        "Bug Reports": "https://github.com/yourusername/pysslvpn/issues",
-        "Source": "https://github.com/yourusername/pysslvpn",
+        "Bug Reports": "https://github.com/proyy/PySslvpn/issues",
+        "Source": "https://github.com/proyy/PySslvpn",
     },
 )
